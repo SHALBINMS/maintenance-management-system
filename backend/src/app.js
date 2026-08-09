@@ -2,6 +2,9 @@
 const express = require("express");
 const app = express();
 const materialRoutes = require("./routes/materialRoutes");
+const transactionRoutes = require("./routes/transactionRoutes");
+
+
 
 // Middleware
 app.use(express.json());
@@ -16,6 +19,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/materials", materialRoutes);
+app.use("/api/transactions", transactionRoutes);
 
 // Export app
 module.exports = app;

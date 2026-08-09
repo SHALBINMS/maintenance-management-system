@@ -42,8 +42,23 @@ const updateMaterial = async (req, res) => {
   }
 };
 
+const deleteMaterial = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const { rowCount } = await pool.query("DELETE FROM materials WHERE id = $1", [id]);
+    if (rowCount === 0) {
+      return res.status(404).json({ error: "Material not found" });
+    }
+    res.status(200).json({ message: "Material deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting material:", err.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 module.exports = {
   getMaterials,
   createMaterial,
-  updateMaterial
+  updateMaterial,
+  deleteMaterial
 };

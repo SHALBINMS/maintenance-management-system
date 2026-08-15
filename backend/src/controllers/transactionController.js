@@ -59,6 +59,33 @@ const createTransaction = async (req, res) => {
   }
 };
 
+const getTransactions = async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        transactions.id,
+        transactions.employee_name,
+        materials.material_name,
+        materials.part_number,
+        transactions.quantity,
+        transactions.action,
+        transactions.created_at
+      FROM transactions
+      JOIN materials
+        ON transactions.material_id = materials.id;
+    `);
+
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error("Error fetching transactions:", err.message);
+
+    res.status(500).json({
+      error: "Internal Server Error",
+    });
+  }
+};
+
 module.exports = {
   createTransaction,
+  getTransactions,
 };

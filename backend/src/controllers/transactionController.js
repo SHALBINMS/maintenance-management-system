@@ -61,7 +61,9 @@ const createTransaction = async (req, res) => {
 
 const getTransactions = async (req, res) => {
   try {
-    const result = await pool.query(`
+    const { employee } = req.query;
+
+    let query = `
       SELECT
         transactions.id,
         transactions.employee_name,
@@ -72,8 +74,17 @@ const getTransactions = async (req, res) => {
         transactions.created_at
       FROM transactions
       JOIN materials
-        ON transactions.material_id = materials.id;
-    `);
+        ON transactions.material_id = materials.id
+    `;
+
+    let values = [];
+
+    if (employee) {
+      query += ` WHERE transactions.employee_name = $1`;
+      values = [employee];
+    }
+
+    const result = await pool.query(query, values);
 
     res.status(200).json(result.rows);
   } catch (err) {

@@ -61,7 +61,7 @@ const createTransaction = async (req, res) => {
 
 const getTransactions = async (req, res) => {
   try {
-    const { employee } = req.query;
+    const { employee, material } = req.query;
 
     let query = `
       SELECT
@@ -78,10 +78,20 @@ const getTransactions = async (req, res) => {
     `;
 
     let values = [];
+    let conditions = [];
 
     if (employee) {
-      query += ` WHERE transactions.employee_name = $1`;
-      values = [employee];
+      conditions.push(`transactions.employee_name = $${values.length + 1}`);
+      values.push(employee);
+    }
+
+   if (material) {
+     conditions.push(`materials.material_name = $${values.length + 1}`);
+     values.push(material);
+   }
+
+    if (conditions.length > 0) {
+      query += " WHERE " + conditions.join(" AND ");
     }
 
     const result = await pool.query(query, values);

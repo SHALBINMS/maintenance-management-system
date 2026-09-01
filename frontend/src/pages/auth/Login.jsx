@@ -1,4 +1,27 @@
+import { useState } from "react";
+import { loginUser } from "../../services/authService";
+import { useAuth } from "../../context/AuthContext";
+
 function Login() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const { login } = useAuth();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      const data = await loginUser(email, password);
+
+      login(data.user, data.token);
+
+      console.log("Login successful:", data);
+    } catch (err) {
+      console.error("Login failed:", err);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center px-4">
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
@@ -10,7 +33,7 @@ function Login() {
           <p className="mt-2 text-sm text-slate-500">Sign in to continue</p>
         </div>
 
-        <form className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-700">
               Email
@@ -18,6 +41,8 @@ function Login() {
 
             <input
               type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email"
               className="w-full rounded-lg border border-slate-300 px-4 py-3
                          text-slate-800 outline-none
@@ -32,6 +57,8 @@ function Login() {
 
             <input
               type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
               className="w-full rounded-lg border border-slate-300 px-4 py-3
                          text-slate-800 outline-none

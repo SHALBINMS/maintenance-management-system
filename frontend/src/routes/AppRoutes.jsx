@@ -4,6 +4,7 @@ import Login from "../pages/auth/Login";
 import AuthLayout from "../layouts/AuthLayout";
 import DashboardLayout from "../layouts/DashboardLayout";
 import ProtectedRoute from "./ProtectedRoute";
+import Materials from "../pages/Materials";
 
 import Dashboard from "../pages/Dashboard";
 
@@ -22,6 +23,7 @@ function AppRoutes() {
         <Route element={<ProtectedRoute />}>
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/materials" element={<Materials />} />
           </Route>
         </Route>
       </Routes>

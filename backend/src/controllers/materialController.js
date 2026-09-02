@@ -15,7 +15,7 @@ const createMaterial = async (req, res) => {
   try {
     const { rows } = await pool.query(
       "INSERT INTO materials (part_number, material_name, quantity, machine, category) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-      [part_number, material_name, quantity, machine, category]
+      [part_number, material_name, quantity, machine, category],
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -30,7 +30,7 @@ const updateMaterial = async (req, res) => {
   try {
     const { rows } = await pool.query(
       "UPDATE materials SET part_number = $1, material_name = $2, quantity = $3, machine = $4, category = $5 WHERE id = $6 RETURNING *",
-      [part_number, material_name, quantity, machine, category, id]
+      [part_number, material_name, quantity, machine, category, id],
     );
     if (rows.length === 0) {
       return res.status(404).json({ error: "Material not found" });
@@ -45,13 +45,21 @@ const updateMaterial = async (req, res) => {
 const deleteMaterial = async (req, res) => {
   const { id } = req.params;
   try {
-    const { rowCount } = await pool.query("DELETE FROM materials WHERE id = $1", [id]);
+    const { rowCount } = await pool.query(
+      "DELETE FROM materials WHERE id = $1",
+      [id],
+    );
     if (rowCount === 0) {
       return res.status(404).json({ error: "Material not found" });
     }
     res.status(200).json({ message: "Material deleted successfully" });
   } catch (err) {
     console.error("Error deleting material:", err.message);
+    if (err.code === "23503") {
+      return res.status(409).json({
+        error: "Material cannot be deleted because it has transaction history",
+      });
+    }
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -60,5 +68,5 @@ module.exports = {
   getMaterials,
   createMaterial,
   updateMaterial,
-  deleteMaterial
+  deleteMaterial,
 };

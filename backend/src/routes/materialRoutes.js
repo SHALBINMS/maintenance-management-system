@@ -15,7 +15,7 @@ router.put("/:id", updateMaterial);
 router.delete(
   "/:id",
   authenticateToken,
-  authorizeRole("ADMIN"),
+  authorizeRole("admin"),
   deleteMaterial,
 );
 

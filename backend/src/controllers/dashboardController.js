@@ -4,6 +4,10 @@ const getDashboardStats = async (req, res) => {
   try {
     const materialsResult = await pool.query("SELECT COUNT(*) FROM materials");
 
+    const machinesResult = await pool.query("SELECT COUNT(*) FROM machines");
+
+    const employeesResult = await pool.query("SELECT COUNT(*) FROM employees");
+
     const transactionsResult = await pool.query(
       "SELECT COUNT(*) FROM transactions",
     );
@@ -20,10 +24,12 @@ const getDashboardStats = async (req, res) => {
     );
 
     res.status(200).json({
-      materials: materialsResult.rows[0].count,
-      stock: stockResult.rows[0].total_stock,
-      lowStock: lowstockResult.rows[0].low_stock,
-      transactions: transactionsResult.rows[0].count,
+      materials: Number(materialsResult.rows[0].count),
+      machines: Number(machinesResult.rows[0].count),
+      employees: Number(employeesResult.rows[0].count),
+      stock: Number(stockResult.rows[0].total_stock),
+      lowStock: Number(lowstockResult.rows[0].low_stock),
+      transactions: Number(transactionsResult.rows[0].count),
     });
   } catch (err) {
     console.error("Error fetching dashboard stats:", err.message);

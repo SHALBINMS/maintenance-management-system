@@ -5,6 +5,8 @@ import { getDashboardStats } from "../services/dashboardService";
 function Dashboard() {
   const [stats, setStats] = useState({
     materials: 0,
+    machines: 0,
+    employees: 0,
     stock: 0,
     lowStock: 0,
     transactions: 0,
@@ -48,6 +50,7 @@ function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="mx-auto max-w-7xl">
+        {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
 
@@ -56,8 +59,13 @@ function Dashboard() {
           </p>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Statistics */}
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <StatCard title="Materials" value={stats.materials} />
+
+          <StatCard title="Machines" value={stats.machines} />
+
+          <StatCard title="Employees" value={stats.employees} />
 
           <StatCard title="Total Stock" value={stats.stock} />
 

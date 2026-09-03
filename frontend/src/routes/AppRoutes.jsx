@@ -5,8 +5,10 @@ import AuthLayout from "../layouts/AuthLayout";
 import DashboardLayout from "../layouts/DashboardLayout";
 import ProtectedRoute from "./ProtectedRoute";
 import Materials from "../pages/Materials";
-
+import Machines from "../pages/Machines";
 import Dashboard from "../pages/Dashboard";
+import Transactions from "../pages/Transactions";
+import Employees from "../pages/Employees";
 
 function AppRoutes() {
   return (
@@ -24,6 +26,9 @@ function AppRoutes() {
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/materials" element={<Materials />} />
+            <Route path="/machines" element={<Machines />} />
+            <Route path="/transactions" element={<Transactions />} />
+            <Route path="/employees" element={<Employees />} />
           </Route>
         </Route>
       </Routes>

@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
+
 function Sidebar() {
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -33,6 +34,12 @@ function Sidebar() {
           <li>
             <NavLink to="/materials" className={navLinkClass}>
               Materials
+            </NavLink>
+          </li>
+
+          <li>
+            <NavLink to="/machines" className={navLinkClass}>
+              Machines
             </NavLink>
           </li>
 

@@ -10,6 +10,7 @@ const transactionRoutes = require("./routes/transactionRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const authRoutes = require("./routes/authRoutes");
 const machinesRoutes = require("./routes/machinesRoutes");
+const employeeRoutes = require("./routes/employeeRoutes");
 
 // Middleware
 app.use(
@@ -31,6 +32,7 @@ app.use("/api/transactions", transactionRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/machines", machinesRoutes);
+app.use("/api/employees", employeeRoutes);
 
 // Health check
 app.get("/", (req, res) => {

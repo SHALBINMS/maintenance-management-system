@@ -5,6 +5,7 @@ import {
   getLowStockMaterials,
 } from "../services/dashboardService";
 import { getRecentTransactions } from "../services/transactionsService";
+import { useNavigate } from "react-router-dom";
 
 function Dashboard() {
   const [stats, setStats] = useState({
@@ -15,7 +16,7 @@ function Dashboard() {
     lowStock: 0,
     transactions: 0,
   });
-
+  const navigate = useNavigate();
   const [lowStockMaterials, setLowStockMaterials] = useState([]);
   const [recentTransactions, setRecentTransactions] = useState([]);
 
@@ -212,6 +213,68 @@ function Dashboard() {
               </table>
             </div>
           )}
+        </div>
+        {/* Quick Actions */}
+        <div className="mt-8 rounded-xl bg-white p-6 shadow">
+          <div className="mb-5">
+            <h2 className="text-xl font-semibold text-gray-900">
+              Quick Actions
+            </h2>
+
+            <p className="mt-1 text-sm text-gray-500">
+              Quickly access common maintenance operations.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <button
+              type="button"
+              onClick={() => navigate("/materials")}
+              className="rounded-lg border border-gray-200 p-5 text-left transition hover:bg-gray-50"
+            >
+              <h3 className="font-semibold text-gray-900">+ Add Material</h3>
+
+              <p className="mt-1 text-sm text-gray-500">
+                Add a new material to inventory.
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate("/transactions")}
+              className="rounded-lg border border-gray-200 p-5 text-left transition hover:bg-gray-50"
+            >
+              <h3 className="font-semibold text-gray-900">📦 Issue Material</h3>
+
+              <p className="mt-1 text-sm text-gray-500">
+                Issue material to an employee.
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate("/employees")}
+              className="rounded-lg border border-gray-200 p-5 text-left transition hover:bg-gray-50"
+            >
+              <h3 className="font-semibold text-gray-900">+ Add Employee</h3>
+
+              <p className="mt-1 text-sm text-gray-500">
+                Register a new employee.
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate("/machines")}
+              className="rounded-lg border border-gray-200 p-5 text-left transition hover:bg-gray-50"
+            >
+              <h3 className="font-semibold text-gray-900">+ Add Machine</h3>
+
+              <p className="mt-1 text-sm text-gray-500">
+                Register a new machine.
+              </p>
+            </button>
+          </div>
         </div>
       </div>
     </div>

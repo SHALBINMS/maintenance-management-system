@@ -4,6 +4,7 @@ import {
   getDashboardStats,
   getLowStockMaterials,
 } from "../services/dashboardService";
+import { getRecentTransactions } from "../services/transactionsService";
 
 function Dashboard() {
   const [stats, setStats] = useState({
@@ -16,6 +17,7 @@ function Dashboard() {
   });
 
   const [lowStockMaterials, setLowStockMaterials] = useState([]);
+  const [recentTransactions, setRecentTransactions] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -23,13 +25,16 @@ function Dashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [statsData, lowStockData] = await Promise.all([
-          getDashboardStats(),
-          getLowStockMaterials(),
-        ]);
+        const [statsData, lowStockData, recentTransactionsData] =
+          await Promise.all([
+            getDashboardStats(),
+            getLowStockMaterials(),
+            getRecentTransactions(),
+          ]);
 
         setStats(statsData);
         setLowStockMaterials(lowStockData);
+        setRecentTransactions(recentTransactionsData);
       } catch (err) {
         console.error("Failed to fetch dashboard data:", err);
         setError("Failed to load dashboard data.");
@@ -79,7 +84,7 @@ function Dashboard() {
           <StatCard title="Transactions" value={stats.transactions} />
         </div>
 
-        {/* Low Stock Alert */}
+        {/* Low Stock Materials */}
         <div className="mt-8 rounded-xl bg-white p-6 shadow">
           <div className="mb-5">
             <h2 className="text-xl font-semibold text-gray-900">
@@ -131,6 +136,75 @@ function Dashboard() {
 
                       <td className="px-4 py-4 text-gray-700">
                         {material.category}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Recent Transactions */}
+        <div className="mt-8 rounded-xl bg-white p-6 shadow">
+          <div className="mb-5">
+            <h2 className="text-xl font-semibold text-gray-900">
+              Recent Transactions
+            </h2>
+
+            <p className="mt-1 text-sm text-gray-500">
+              Latest material transactions.
+            </p>
+          </div>
+
+          {recentTransactions.length === 0 ? (
+            <div className="rounded-lg bg-gray-50 p-6 text-center">
+              <p className="text-gray-600">No recent transactions.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b text-sm text-gray-500">
+                    <th className="px-4 py-3">Employee</th>
+                    <th className="px-4 py-3">Material</th>
+                    <th className="px-4 py-3">Part Number</th>
+                    <th className="px-4 py-3">Quantity</th>
+                    <th className="px-4 py-3">Action</th>
+                    <th className="px-4 py-3">Date</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {recentTransactions.map((transaction) => (
+                    <tr
+                      key={transaction.id}
+                      className="border-b last:border-b-0"
+                    >
+                      <td className="px-4 py-4 font-medium text-gray-900">
+                        {transaction.employee_name}
+                      </td>
+
+                      <td className="px-4 py-4 text-gray-700">
+                        {transaction.material_name}
+                      </td>
+
+                      <td className="px-4 py-4 text-gray-700">
+                        {transaction.part_number}
+                      </td>
+
+                      <td className="px-4 py-4 text-gray-700">
+                        {transaction.quantity}
+                      </td>
+
+                      <td className="px-4 py-4">
+                        <span className="rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-700">
+                          {transaction.action}
+                        </span>
+                      </td>
+
+                      <td className="px-4 py-4 text-gray-500">
+                        {new Date(transaction.created_at).toLocaleString()}
                       </td>
                     </tr>
                   ))}

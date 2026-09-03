@@ -13,3 +13,13 @@ export const createTransaction = async (transactionData) => {
 
   return response.data;
 };
+
+export const getRecentTransactions = async () => {
+  const response = await api.get("/transactions", {
+    params: {
+      limit: 5,
+    },
+  });
+
+  return response.data;
+};

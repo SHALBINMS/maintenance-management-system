@@ -40,6 +40,33 @@ const getDashboardStats = async (req, res) => {
   }
 };
 
+// Get materials that are low in stock
+const getLowStockMaterials = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT
+         id,
+         part_number,
+         material_name,
+         quantity,
+         machine,
+         category
+       FROM materials
+       WHERE quantity <= 5
+       ORDER BY quantity ASC`,
+    );
+
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error("Error fetching low stock materials:", err.message);
+
+    res.status(500).json({
+      error: "Internal Server Error",
+    });
+  }
+};
+
 module.exports = {
   getDashboardStats,
+  getLowStockMaterials,
 };

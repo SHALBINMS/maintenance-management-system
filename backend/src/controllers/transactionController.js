@@ -98,7 +98,7 @@ const createTransaction = async (req, res) => {
 
 const getTransactions = async (req, res) => {
   try {
-    const { employee, material } = req.query;
+    const { employee, material, limit } = req.query;
 
     let query = `
       SELECT
@@ -137,6 +137,11 @@ const getTransactions = async (req, res) => {
     }
 
     query += " ORDER BY transactions.created_at DESC";
+
+    if (limit) {
+      query += ` LIMIT $${values.length + 1}`;
+      values.push(Number(limit));
+    }
 
     const result = await pool.query(query, values);
 

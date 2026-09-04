@@ -21,7 +21,8 @@ function Machines() {
 
   const [formData, setFormData] = useState({
     machine_code: "",
-    machine_name: "",
+    name: "",
+    model: "",
     location: "",
     status: "ACTIVE",
   });
@@ -57,7 +58,8 @@ function Machines() {
 
     return (
       machine.machine_code?.toLowerCase().includes(search) ||
-      machine.machine_name?.toLowerCase().includes(search) ||
+      machine.name?.toLowerCase().includes(search) ||
+      machine.model?.toLowerCase().includes(search) ||
       machine.location?.toLowerCase().includes(search) ||
       machine.status?.toLowerCase().includes(search)
     );
@@ -72,7 +74,8 @@ function Machines() {
 
     setFormData({
       machine_code: "",
-      machine_name: "",
+      name: "",
+      model: "",
       location: "",
       status: "ACTIVE",
     });
@@ -91,7 +94,8 @@ function Machines() {
 
     setFormData({
       machine_code: machine.machine_code || "",
-      machine_name: machine.machine_name || "",
+      name: machine.name || "",
+      model: machine.model || "",
       location: machine.location || "",
       status: machine.status || "ACTIVE",
     });
@@ -133,7 +137,8 @@ function Machines() {
 
     if (
       !formData.machine_code.trim() ||
-      !formData.machine_name.trim() ||
+      !formData.name.trim() ||
+      !formData.model.trim() ||
       !formData.location.trim()
     ) {
       setError("Please fill all fields.");
@@ -158,7 +163,8 @@ function Machines() {
 
       setFormData({
         machine_code: "",
-        machine_name: "",
+        name: "",
+        model: "",
         location: "",
         status: "ACTIVE",
       });
@@ -306,6 +312,10 @@ function Machines() {
                   </th>
 
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                    Model
+                  </th>
+
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
                     Location
                   </th>
 
@@ -323,7 +333,7 @@ function Machines() {
                 {filteredMachines.length === 0 ? (
                   <tr>
                     <td
-                      colSpan="6"
+                      colSpan="7"
                       className="px-6 py-10 text-center text-sm text-gray-500"
                     >
                       {searchTerm
@@ -343,7 +353,11 @@ function Machines() {
                       </td>
 
                       <td className="px-6 py-4 text-sm text-gray-700">
-                        {machine.machine_name}
+                        {machine.name}
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        {machine.model}
                       </td>
 
                       <td className="px-6 py-4 text-sm text-gray-700">
@@ -440,10 +454,24 @@ function Machines() {
                 </label>
 
                 <input
-                  name="machine_name"
-                  value={formData.machine_name}
+                  name="name"
+                  value={formData.name}
                   onChange={handleChange}
                   placeholder="Conveyor"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Model
+                </label>
+
+                <input
+                  name="model"
+                  value={formData.model}
+                  onChange={handleChange}
+                  placeholder="CV-100"
                   className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:outline-none"
                 />
               </div>

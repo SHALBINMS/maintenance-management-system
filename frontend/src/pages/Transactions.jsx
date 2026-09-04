@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   getTransactions,
   createTransaction,
-} from "../services/transactionService";
+} from "../services/transactionsService";
 import { getEmployees } from "../services/employeeService";
 import { getMaterials } from "../services/materialsService";
 
@@ -11,9 +11,19 @@ function Transactions() {
   const [employees, setEmployees] = useState([]);
   const [materials, setMaterials] = useState([]);
 
-  const [employeeId, setEmployeeId] = useState("");
-  const [materialId, setMaterialId] = useState("");
-  const [quantity, setQuantity] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const [showModal, setShowModal] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const [formData, setFormData] = useState({
+    employee_id: "",
+    material_id: "",
+    quantity: "",
+  });
 
   // Filters
   const [searchTerm, setSearchTerm] = useState("");
@@ -26,75 +36,106 @@ function Transactions() {
   const [currentPage, setCurrentPage] = useState(1);
   const transactionsPerPage = 10;
 
-  // Transaction details
-  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  // --------------------------------
+  // FETCH DATA
+  // --------------------------------
 
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-  const [error, setError] = useState("");
-  const [formError, setFormError] = useState("");
-  const [success, setSuccess] = useState("");
+      const [transactionData, employeeData, materialData] = await Promise.all([
+        getTransactions(),
+        getEmployees(),
+        getMaterials(),
+      ]);
+
+      setTransactions(transactionData);
+      setEmployees(employeeData);
+      setMaterials(materialData);
+    } catch (err) {
+      console.error("Failed to fetch transaction data:", err);
+
+      setError(err.response?.data?.error || "Failed to load transaction data.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError("");
-
-        const [transactionData, employeeData, materialData] = await Promise.all(
-          [getTransactions(), getEmployees(), getMaterials()],
-        );
-
-        setTransactions(transactionData);
-        setEmployees(employeeData);
-        setMaterials(materialData);
-      } catch (err) {
-        console.error("Failed to load transaction data:", err);
-
-        setError(
-          err.response?.data?.error || "Failed to load transaction data.",
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
   }, []);
 
-  const handleCreateTransaction = async (e) => {
+  // --------------------------------
+  // MODAL
+  // --------------------------------
+
+  const openModal = () => {
+    setFormData({
+      employee_id: "",
+      material_id: "",
+      quantity: "",
+    });
+
+    setError("");
+    setSuccess("");
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    if (submitting) return;
+
+    setShowModal(false);
+    setError("");
+  };
+
+  // --------------------------------
+  // FORM CHANGE
+  // --------------------------------
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  // --------------------------------
+  // CREATE TRANSACTION
+  // --------------------------------
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    setFormError("");
+    setError("");
     setSuccess("");
 
-    if (!employeeId) {
-      setFormError("Please select an employee.");
+    if (!formData.employee_id || !formData.material_id || !formData.quantity) {
+      setError("Employee, material and quantity are required.");
       return;
     }
 
-    if (!materialId) {
-      setFormError("Please select a material.");
-      return;
-    }
-
-    if (quantity === "" || Number(quantity) <= 0) {
-      setFormError("Please enter a valid quantity.");
+    if (Number(formData.quantity) <= 0) {
+      setError("Quantity must be greater than 0.");
       return;
     }
 
     const selectedMaterial = materials.find(
-      (material) => Number(material.id) === Number(materialId),
+      (material) => Number(material.id) === Number(formData.material_id),
     );
 
     if (!selectedMaterial) {
-      setFormError("Selected material not found.");
+      setError("Selected material not found.");
       return;
     }
 
-    if (Number(quantity) > Number(selectedMaterial.quantity)) {
-      setFormError(`Only ${selectedMaterial.quantity} units are available.`);
+    if (Number(formData.quantity) > Number(selectedMaterial.quantity)) {
+      setError(
+        `Insufficient stock. Available stock: ${selectedMaterial.quantity}`,
+      );
       return;
     }
 
@@ -102,37 +143,37 @@ function Transactions() {
       setSubmitting(true);
 
       await createTransaction({
-        material_id: Number(materialId),
-        employee_id: Number(employeeId),
-        quantity: Number(quantity),
+        material_id: Number(formData.material_id),
+        employee_id: Number(formData.employee_id),
+        quantity: Number(formData.quantity),
+      });
+
+      setShowModal(false);
+
+      setFormData({
+        employee_id: "",
+        material_id: "",
+        quantity: "",
       });
 
       setSuccess("Material issued successfully.");
 
-      setEmployeeId("");
-      setMaterialId("");
-      setQuantity("");
+      await fetchData();
 
-      const [transactionData, materialData] = await Promise.all([
-        getTransactions(),
-        getMaterials(),
-      ]);
-
-      setTransactions(transactionData);
-      setMaterials(materialData);
       setCurrentPage(1);
     } catch (err) {
       console.error("Failed to create transaction:", err);
 
-      setFormError(
-        err.response?.data?.error || "Failed to create transaction.",
-      );
+      setError(err.response?.data?.error || "Failed to create transaction.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Search + filters
+  // --------------------------------
+  // SEARCH + FILTER
+  // --------------------------------
+
   const filteredTransactions = transactions.filter((transaction) => {
     const search = searchTerm.toLowerCase().trim();
 
@@ -158,10 +199,12 @@ function Transactions() {
 
     if (dateFilter && transaction.created_at) {
       const transactionDate = new Date(transaction.created_at);
+
       const now = new Date();
 
       if (dateFilter === "today") {
         const startOfToday = new Date();
+
         startOfToday.setHours(0, 0, 0, 0);
 
         matchesDate = transactionDate >= startOfToday;
@@ -169,6 +212,7 @@ function Transactions() {
 
       if (dateFilter === "7days") {
         const sevenDaysAgo = new Date();
+
         sevenDaysAgo.setDate(now.getDate() - 7);
 
         matchesDate = transactionDate >= sevenDaysAgo;
@@ -176,6 +220,7 @@ function Transactions() {
 
       if (dateFilter === "30days") {
         const thirtyDaysAgo = new Date();
+
         thirtyDaysAgo.setDate(now.getDate() - 30);
 
         matchesDate = transactionDate >= thirtyDaysAgo;
@@ -191,7 +236,10 @@ function Transactions() {
     );
   });
 
-  // Pagination
+  // --------------------------------
+  // PAGINATION
+  // --------------------------------
+
   const totalPages = Math.ceil(
     filteredTransactions.length / transactionsPerPage,
   );
@@ -202,7 +250,10 @@ function Transactions() {
 
   const currentTransactions = filteredTransactions.slice(startIndex, endIndex);
 
-  // Reset page when filters change
+  // --------------------------------
+  // FILTER HANDLERS
+  // --------------------------------
+
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
     setCurrentPage(1);
@@ -244,6 +295,10 @@ function Transactions() {
     actionFilter ||
     dateFilter;
 
+  // --------------------------------
+  // LOADING / ERROR
+  // --------------------------------
+
   if (loading) {
     return (
       <div className="p-8">
@@ -252,112 +307,41 @@ function Transactions() {
     );
   }
 
-  if (error && transactions.length === 0) {
-    return (
-      <div className="p-8">
-        <p className="text-red-600">{error}</p>
-      </div>
-    );
-  }
-
   return (
     <div className="p-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Transactions</h1>
+      {/* HEADER */}
 
-        <p className="mt-1 text-gray-600">
-          Issue materials to employees and view transaction history.
-        </p>
-      </div>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Transactions</h1>
 
-      {/* Issue Material */}
-      <form
-        onSubmit={handleCreateTransaction}
-        className="mb-8 rounded-lg bg-white p-6 shadow-sm"
-      >
-        <h2 className="mb-6 text-lg font-semibold text-gray-900">
-          Issue Material
-        </h2>
-
-        <div className="grid gap-5 md:grid-cols-3">
-          {/* Employee */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Employee
-            </label>
-
-            <select
-              value={employeeId}
-              onChange={(e) => setEmployeeId(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 focus:border-gray-500 focus:outline-none"
-            >
-              <option value="">Select employee</option>
-
-              {employees.map((employee) => (
-                <option key={employee.id} value={employee.id}>
-                  {employee.name} ({employee.employee_code})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Material */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Material
-            </label>
-
-            <select
-              value={materialId}
-              onChange={(e) => setMaterialId(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 focus:border-gray-500 focus:outline-none"
-            >
-              <option value="">Select material</option>
-
-              {materials.map((material) => (
-                <option key={material.id} value={material.id}>
-                  {material.material_name} — Stock: {material.quantity}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Quantity */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Quantity
-            </label>
-
-            <input
-              type="number"
-              min="1"
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              placeholder="Enter quantity"
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-gray-500 focus:outline-none"
-            />
-          </div>
+          <p className="mt-1 text-gray-600">
+            View transaction history and issue materials to employees.
+          </p>
         </div>
 
-        {formError && <p className="mt-4 text-sm text-red-600">{formError}</p>}
-
-        {success && <p className="mt-4 text-sm text-green-600">{success}</p>}
-
         <button
-          type="submit"
-          disabled={submitting}
-          className="mt-5 rounded-lg bg-gray-900 px-5 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+          type="button"
+          onClick={openModal}
+          className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
         >
-          {submitting ? "Issuing..." : "Issue Material"}
+          + Issue Material
         </button>
-      </form>
+      </div>
 
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {/* SUCCESS */}
 
-      {/* Transaction History */}
-      <div className="overflow-x-auto rounded-lg bg-white shadow-sm">
-        {/* Filters */}
+      {success && (
+        <div className="mb-6 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
+          {success}
+        </div>
+      )}
+
+      {/* TRANSACTION HISTORY */}
+
+      <div className="overflow-hidden rounded-lg bg-white shadow-sm">
+        {/* FILTER HEADER */}
+
         <div className="border-b border-gray-200 px-6 py-5">
           <div className="mb-5">
             <h2 className="text-lg font-semibold text-gray-900">
@@ -371,7 +355,8 @@ function Transactions() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-            {/* Search */}
+            {/* SEARCH */}
+
             <div className="lg:col-span-2">
               <label className="mb-1 block text-sm font-medium text-gray-700">
                 Search
@@ -386,7 +371,8 @@ function Transactions() {
               />
             </div>
 
-            {/* Employee */}
+            {/* EMPLOYEE */}
+
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">
                 Employee
@@ -407,7 +393,8 @@ function Transactions() {
               </select>
             </div>
 
-            {/* Material */}
+            {/* MATERIAL */}
+
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">
                 Material
@@ -428,7 +415,8 @@ function Transactions() {
               </select>
             </div>
 
-            {/* Action */}
+            {/* ACTION */}
+
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">
                 Action
@@ -440,12 +428,15 @@ function Transactions() {
                 className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus:border-gray-500 focus:outline-none"
               >
                 <option value="">All Actions</option>
+
                 <option value="ISSUED">ISSUED</option>
-                <option value="RETURNED">RETURNED</option>
+
+                <option value="IN">IN</option>
               </select>
             </div>
 
-            {/* Date */}
+            {/* DATE */}
+
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">
                 Date
@@ -457,123 +448,146 @@ function Transactions() {
                 className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus:border-gray-500 focus:outline-none"
               >
                 <option value="">All Time</option>
+
                 <option value="today">Today</option>
+
                 <option value="7days">Last 7 Days</option>
+
                 <option value="30days">Last 30 Days</option>
               </select>
             </div>
           </div>
 
+          {/* CLEAR FILTERS */}
+
           {hasActiveFilters && (
             <button
               type="button"
               onClick={clearFilters}
-              className="mt-4 text-sm font-medium text-gray-600 hover:text-gray-900"
+              className="mt-4 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
-              Clear all filters
+              Clear Filters
             </button>
           )}
         </div>
 
-        {/* Table */}
-        <table className="min-w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                ID
-              </th>
+        {/* TABLE */}
 
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                Employee
-              </th>
-
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                Material
-              </th>
-
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                Part Number
-              </th>
-
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                Quantity
-              </th>
-
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                Action
-              </th>
-
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                Date
-              </th>
-
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                Details
-              </th>
-            </tr>
-          </thead>
-
-          <tbody className="divide-y divide-gray-200">
-            {currentTransactions.length === 0 ? (
+        <div className="overflow-x-auto">
+          <table className="min-w-full">
+            <thead className="bg-gray-50">
               <tr>
-                <td
-                  colSpan="8"
-                  className="px-6 py-8 text-center text-sm text-gray-500"
-                >
-                  {hasActiveFilters
-                    ? "No transactions match your filters."
-                    : "No transactions found."}
-                </td>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                  ID
+                </th>
+
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                  Employee
+                </th>
+
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                  Material
+                </th>
+
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                  Part Number
+                </th>
+
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                  Quantity
+                </th>
+
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                  Action
+                </th>
+
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                  Date
+                </th>
+
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                  Details
+                </th>
               </tr>
-            ) : (
-              currentTransactions.map((transaction) => (
-                <tr key={transaction.id}>
-                  <td className="px-6 py-4 text-sm text-gray-700">
-                    {transaction.id}
-                  </td>
+            </thead>
 
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                    {transaction.employee_name || "-"}
-                  </td>
-
-                  <td className="px-6 py-4 text-sm text-gray-700">
-                    {transaction.material_name || "-"}
-                  </td>
-
-                  <td className="px-6 py-4 text-sm text-gray-700">
-                    {transaction.part_number || "-"}
-                  </td>
-
-                  <td className="px-6 py-4 text-sm text-gray-700">
-                    {transaction.quantity}
-                  </td>
-
-                  <td className="px-6 py-4 text-sm font-medium text-gray-700">
-                    {transaction.action}
-                  </td>
-
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {transaction.created_at
-                      ? new Date(transaction.created_at).toLocaleString()
-                      : "-"}
-                  </td>
-
-                  <td className="px-6 py-4">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedTransaction(transaction)}
-                      className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                    >
-                      View
-                    </button>
+            <tbody className="divide-y divide-gray-200">
+              {currentTransactions.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan="8"
+                    className="px-6 py-8 text-center text-sm text-gray-500"
+                  >
+                    {hasActiveFilters
+                      ? "No transactions match your filters."
+                      : "No transactions found."}
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                currentTransactions.map((transaction) => (
+                  <tr key={transaction.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 text-sm text-gray-700">
+                      #{transaction.id}
+                    </td>
 
-        {/* Pagination */}
+                    <td className="px-6 py-4">
+                      <p className="text-sm font-medium text-gray-900">
+                        {transaction.employee_name || "-"}
+                      </p>
+
+                      <p className="text-xs text-gray-500">
+                        {transaction.employee_code || "-"}
+                      </p>
+                    </td>
+
+                    <td className="px-6 py-4 text-sm text-gray-700">
+                      {transaction.material_name || "-"}
+                    </td>
+
+                    <td className="px-6 py-4 text-sm text-gray-700">
+                      {transaction.part_number || "-"}
+                    </td>
+
+                    <td className="px-6 py-4 text-sm font-medium text-gray-700">
+                      {transaction.quantity}
+                    </td>
+
+                    <td className="px-6 py-4">
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                          transaction.action === "IN"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        }`}
+                      >
+                        {transaction.action}
+                      </span>
+                    </td>
+
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {transaction.created_at
+                        ? new Date(transaction.created_at).toLocaleString()
+                        : "-"}
+                    </td>
+
+                    <td className="px-6 py-4">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTransaction(transaction)}
+                        className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                      >
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* PAGINATION */}
+
         {filteredTransactions.length > 0 && (
           <div className="flex flex-col gap-4 border-t border-gray-200 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-gray-500">
@@ -606,7 +620,9 @@ function Transactions() {
 
                 <div className="flex items-center gap-1">
                   {Array.from(
-                    { length: totalPages },
+                    {
+                      length: totalPages,
+                    },
                     (_, index) => index + 1,
                   ).map((page) => (
                     <button
@@ -640,7 +656,132 @@ function Transactions() {
         )}
       </div>
 
-      {/* Transaction Details Modal */}
+      {/* ISSUE MATERIAL MODAL */}
+
+      {showModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={closeModal}
+        >
+          <div
+            className="w-full max-w-lg rounded-xl bg-white shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Issue Material
+                </h2>
+
+                <p className="text-sm text-gray-500">
+                  Issue material to an employee.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeModal}
+                disabled={submitting}
+                className="text-2xl leading-none text-gray-400 hover:text-gray-700 disabled:opacity-40"
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-6">
+              <div className="space-y-5">
+                {/* EMPLOYEE */}
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                    Employee
+                  </label>
+
+                  <select
+                    name="employee_id"
+                    value={formData.employee_id}
+                    onChange={handleChange}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 focus:border-gray-500 focus:outline-none"
+                  >
+                    <option value="">Select employee</option>
+
+                    {employees.map((employee) => (
+                      <option key={employee.id} value={employee.id}>
+                        {employee.name} ({employee.employee_code})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* MATERIAL */}
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                    Material
+                  </label>
+
+                  <select
+                    name="material_id"
+                    value={formData.material_id}
+                    onChange={handleChange}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 focus:border-gray-500 focus:outline-none"
+                  >
+                    <option value="">Select material</option>
+
+                    {materials.map((material) => (
+                      <option key={material.id} value={material.id}>
+                        {material.material_name} — Stock: {material.quantity}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* QUANTITY */}
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                    Quantity
+                  </label>
+
+                  <input
+                    type="number"
+                    name="quantity"
+                    min="1"
+                    value={formData.quantity}
+                    onChange={handleChange}
+                    placeholder="Enter quantity"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-gray-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  disabled={submitting}
+                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="rounded-lg bg-gray-900 px-5 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {submitting ? "Issuing..." : "Issue Material"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* TRANSACTION DETAILS MODAL */}
+
       {selectedTransaction && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
@@ -650,7 +791,8 @@ function Transactions() {
             className="w-full max-w-lg rounded-xl bg-white shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header */}
+            {/* HEADER */}
+
             <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
               <div>
                 <h2 className="text-xl font-semibold text-gray-900">
@@ -671,7 +813,8 @@ function Transactions() {
               </button>
             </div>
 
-            {/* Details */}
+            {/* DETAILS */}
+
             <div className="space-y-4 px-6 py-6">
               <div className="flex justify-between border-b pb-3">
                 <span className="text-sm text-gray-500">Transaction ID</span>
@@ -740,7 +883,8 @@ function Transactions() {
               </div>
             </div>
 
-            {/* Modal Footer */}
+            {/* FOOTER */}
+
             <div className="border-t border-gray-200 px-6 py-4 text-right">
               <button
                 type="button"

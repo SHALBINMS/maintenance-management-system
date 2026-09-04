@@ -11,6 +11,7 @@ const dashboardRoutes = require("./routes/dashboardRoutes");
 const authRoutes = require("./routes/authRoutes");
 const machinesRoutes = require("./routes/machinesRoutes");
 const employeeRoutes = require("./routes/employeeRoutes");
+const stockMovementRoutes = require("./routes/stockMovementRoutes");
 
 // Middleware
 app.use(
@@ -33,6 +34,7 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/machines", machinesRoutes);
 app.use("/api/employees", employeeRoutes);
+app.use("/api/stock-movements", stockMovementRoutes);
 
 // Health check
 app.get("/", (req, res) => {

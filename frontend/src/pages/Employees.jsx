@@ -9,25 +9,25 @@ import {
 function Employees() {
   const [employees, setEmployees] = useState([]);
 
-  const [editingId, setEditingId] = useState(null);
-
-  const [employeeCode, setEmployeeCode] = useState("");
-  const [name, setName] = useState("");
-  const [department, setDepartment] = useState("");
-  const [position, setPosition] = useState("");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState("active");
-
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [deletingId, setDeletingId] = useState(null);
-
   const [error, setError] = useState("");
-  const [formError, setFormError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const [showModal, setShowModal] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const [formData, setFormData] = useState({
+    employee_code: "",
+    name: "",
+    department: "",
+  });
 
   const fetchEmployees = async () => {
     try {
+      setLoading(true);
       setError("");
 
       const data = await getEmployees();
@@ -45,400 +45,426 @@ function Employees() {
     fetchEmployees();
   }, []);
 
-  const resetForm = () => {
-    setEditingId(null);
-    setEmployeeCode("");
-    setName("");
-    setDepartment("");
-    setPosition("");
-    setPhone("");
-    setEmail("");
-    setStatus("active");
-    setFormError("");
+  // -------------------------
+  // SEARCH
+  // -------------------------
+
+  const filteredEmployees = employees.filter((employee) => {
+    const search = searchTerm.toLowerCase().trim();
+
+    if (!search) return true;
+
+    return (
+      employee.employee_code?.toLowerCase().includes(search) ||
+      employee.name?.toLowerCase().includes(search) ||
+      employee.department?.toLowerCase().includes(search)
+    );
+  });
+
+  // -------------------------
+  // OPEN ADD MODAL
+  // -------------------------
+
+  const openAddModal = () => {
+    setEditingEmployee(null);
+
+    setFormData({
+      employee_code: "",
+      name: "",
+      department: "",
+    });
+
+    setError("");
+    setSuccess("");
+    setShowModal(true);
   };
+
+  // -------------------------
+  // OPEN EDIT MODAL
+  // -------------------------
+
+  const openEditModal = (employee) => {
+    setEditingEmployee(employee);
+
+    setFormData({
+      employee_code: employee.employee_code || "",
+      name: employee.name || "",
+      department: employee.department || "",
+    });
+
+    setError("");
+    setSuccess("");
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    if (submitting) return;
+
+    setShowModal(false);
+    setEditingEmployee(null);
+  };
+
+  // -------------------------
+  // FORM CHANGE
+  // -------------------------
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  // -------------------------
+  // CREATE / UPDATE
+  // -------------------------
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    setFormError("");
+    setError("");
+    setSuccess("");
 
-    if (!employeeCode.trim()) {
-      setFormError("Employee code is required.");
-      return;
-    }
-
-    if (!name.trim()) {
-      setFormError("Employee name is required.");
+    if (
+      !formData.employee_code.trim() ||
+      !formData.name.trim() ||
+      !formData.department.trim()
+    ) {
+      setError("Please fill all fields.");
       return;
     }
 
     try {
       setSubmitting(true);
 
-      const employeeData = {
-        employee_code: employeeCode.trim(),
-        name: name.trim(),
-        department: department.trim() || null,
-        position: position.trim() || null,
-        phone: phone.trim() || null,
-        email: email.trim() || null,
-        status,
-      };
+      if (editingEmployee) {
+        await updateEmployee(editingEmployee.id, formData);
 
-      if (editingId) {
-        await updateEmployee(editingId, employeeData);
+        setSuccess("Employee updated successfully.");
       } else {
-        await createEmployee(employeeData);
+        await createEmployee(formData);
+
+        setSuccess("Employee created successfully.");
       }
 
-      resetForm();
+      setShowModal(false);
+      setEditingEmployee(null);
+
+      setFormData({
+        employee_code: "",
+        name: "",
+        department: "",
+      });
+
       await fetchEmployees();
     } catch (err) {
       console.error("Failed to save employee:", err);
 
-      setFormError(err.response?.data?.error || "Failed to save employee.");
+      setError(err.response?.data?.error || "Failed to save employee.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleEdit = (employee) => {
-    setEditingId(employee.id);
-    setEmployeeCode(employee.employee_code || "");
-    setName(employee.name || "");
-    setDepartment(employee.department || "");
-    setPosition(employee.position || "");
-    setPhone(employee.phone || "");
-    setEmail(employee.email || "");
-    setStatus(employee.status || "active");
-
-    setFormError("");
-
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
-  };
+  // -------------------------
+  // DELETE
+  // -------------------------
 
   const handleDelete = async (id) => {
     const confirmed = window.confirm(
       "Are you sure you want to delete this employee?",
     );
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     try {
-      setDeletingId(id);
       setError("");
+      setSuccess("");
 
       await deleteEmployee(id);
+
+      setSuccess("Employee deleted successfully.");
 
       await fetchEmployees();
     } catch (err) {
       console.error("Failed to delete employee:", err);
 
       setError(err.response?.data?.error || "Failed to delete employee.");
-    } finally {
-      setDeletingId(null);
     }
   };
 
+  // -------------------------
+  // LOADING
+  // -------------------------
+
   if (loading) {
     return (
-      <div className="p-8">
+      <div className="flex min-h-screen items-center justify-center">
         <p className="text-gray-600">Loading employees...</p>
       </div>
     );
   }
 
   return (
-    <div className="p-8">
-      {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Employees</h1>
+    <div className="min-h-screen bg-gray-100 p-8">
+      <div className="mx-auto max-w-7xl">
+        {/* HEADER */}
 
-        <p className="mt-1 text-gray-600">
-          Manage company workers and employee information.
-        </p>
-      </div>
-
-      {/* Add / Edit Employee Form */}
-      <form
-        onSubmit={handleSubmit}
-        className="mb-8 rounded-lg bg-white p-6 shadow-sm"
-      >
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">
-            {editingId ? "Edit Employee" : "Add Employee"}
-          </h2>
-
-          {editingId && (
-            <button
-              type="button"
-              onClick={resetForm}
-              className="text-sm font-medium text-gray-600 hover:text-gray-900"
-            >
-              Cancel Edit
-            </button>
-          )}
-        </div>
-
-        <div className="grid gap-5 md:grid-cols-2">
-          {/* Employee Code */}
+        <div className="mb-8 flex items-center justify-between">
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Employee Code
-            </label>
+            <h1 className="text-3xl font-bold text-gray-900">Employees</h1>
 
-            <input
-              type="text"
-              value={employeeCode}
-              onChange={(e) => setEmployeeCode(e.target.value)}
-              placeholder="EMP001"
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-gray-500 focus:outline-none"
-            />
+            <p className="mt-1 text-gray-600">
+              Manage employees in the maintenance system.
+            </p>
           </div>
 
-          {/* Name */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Name
-            </label>
-
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter employee name"
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-gray-500 focus:outline-none"
-            />
-          </div>
-
-          {/* Department */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Department
-            </label>
-
-            <input
-              type="text"
-              value={department}
-              onChange={(e) => setDepartment(e.target.value)}
-              placeholder="Maintenance"
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-gray-500 focus:outline-none"
-            />
-          </div>
-
-          {/* Position */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Position
-            </label>
-
-            <input
-              type="text"
-              value={position}
-              onChange={(e) => setPosition(e.target.value)}
-              placeholder="Technician"
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-gray-500 focus:outline-none"
-            />
-          </div>
-
-          {/* Phone */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Phone
-            </label>
-
-            <input
-              type="text"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="Enter phone number"
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-gray-500 focus:outline-none"
-            />
-          </div>
-
-          {/* Email */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Email
-            </label>
-
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="employee@company.com"
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-gray-500 focus:outline-none"
-            />
-          </div>
-
-          {/* Status */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Status
-            </label>
-
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 focus:border-gray-500 focus:outline-none"
-            >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-          </div>
-        </div>
-
-        {formError && <p className="mt-4 text-sm text-red-600">{formError}</p>}
-
-        <div className="mt-5 flex gap-3">
           <button
-            type="submit"
-            disabled={submitting}
-            className="rounded-lg bg-gray-900 px-5 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+            type="button"
+            onClick={openAddModal}
+            className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
           >
-            {submitting
-              ? editingId
-                ? "Updating..."
-                : "Adding..."
-              : editingId
-                ? "Update Employee"
-                : "Add Employee"}
+            + Add Employee
           </button>
-
-          {editingId && (
-            <button
-              type="button"
-              onClick={resetForm}
-              className="rounded-lg border border-gray-300 px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-          )}
         </div>
-      </form>
 
-      {/* Error */}
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+        {/* ERROR */}
 
-      {/* Employees Table */}
-      <div className="overflow-x-auto rounded-lg bg-white shadow-sm">
-        <table className="min-w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                ID
-              </th>
+        {error && (
+          <div className="mb-5 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
 
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                Employee Code
-              </th>
+        {/* SUCCESS */}
 
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                Name
-              </th>
+        {success && (
+          <div className="mb-5 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
+            {success}
+          </div>
+        )}
 
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                Department
-              </th>
+        {/* TABLE CARD */}
 
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                Position
-              </th>
+        <div className="overflow-hidden rounded-lg bg-white shadow-sm">
+          {/* SEARCH */}
 
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                Phone
-              </th>
+          <div className="border-b border-gray-200 px-6 py-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Employee List
+                </h2>
 
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                Status
-              </th>
+                <p className="mt-1 text-sm text-gray-500">
+                  {filteredEmployees.length} employee
+                  {filteredEmployees.length !== 1 ? "s" : ""} found
+                </p>
+              </div>
 
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                Actions
-              </th>
-            </tr>
-          </thead>
+              <div className="w-full sm:w-80">
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    🔍
+                  </span>
 
-          <tbody className="divide-y divide-gray-200">
-            {employees.length === 0 ? (
-              <tr>
-                <td
-                  colSpan="8"
-                  className="px-6 py-8 text-center text-sm text-gray-500"
-                >
-                  No employees found.
-                </td>
-              </tr>
-            ) : (
-              employees.map((employee) => (
-                <tr key={employee.id}>
-                  <td className="px-6 py-4 text-sm text-gray-700">
-                    {employee.id}
-                  </td>
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search employees..."
+                    className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-4 text-sm focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
 
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                    {employee.employee_code}
-                  </td>
+          {/* TABLE */}
 
-                  <td className="px-6 py-4 text-sm text-gray-700">
-                    {employee.name}
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                    ID
+                  </th>
 
-                  <td className="px-6 py-4 text-sm text-gray-700">
-                    {employee.department || "-"}
-                  </td>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                    Employee Code
+                  </th>
 
-                  <td className="px-6 py-4 text-sm text-gray-700">
-                    {employee.position || "-"}
-                  </td>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                    Name
+                  </th>
 
-                  <td className="px-6 py-4 text-sm text-gray-700">
-                    {employee.phone || "-"}
-                  </td>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                    Department
+                  </th>
 
-                  <td className="px-6 py-4 text-sm">
-                    <span
-                      className={
-                        employee.status === "active"
-                          ? "font-medium text-green-600"
-                          : "font-medium text-gray-500"
-                      }
-                    >
-                      {employee.status}
-                    </span>
-                  </td>
-
-                  <td className="px-6 py-4">
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleEdit(employee)}
-                        className="rounded-lg bg-gray-700 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800"
-                      >
-                        Edit
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(employee.id)}
-                        disabled={deletingId === employee.id}
-                        className="rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {deletingId === employee.id ? "Deleting..." : "Delete"}
-                      </button>
-                    </div>
-                  </td>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                    Actions
+                  </th>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              </thead>
+
+              <tbody className="divide-y divide-gray-200">
+                {filteredEmployees.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan="5"
+                      className="px-6 py-10 text-center text-sm text-gray-500"
+                    >
+                      {searchTerm
+                        ? "No employees match your search."
+                        : "No employees found."}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredEmployees.map((employee) => (
+                    <tr key={employee.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        {employee.id}
+                      </td>
+
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                        {employee.employee_code}
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        {employee.name}
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        {employee.department}
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(employee)}
+                            className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                          >
+                            Edit
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(employee.id)}
+                            className="rounded-lg border border-red-200 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
+
+      {/* ADD / EDIT MODAL */}
+
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b px-6 py-4">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {editingEmployee ? "Edit Employee" : "Add Employee"}
+                </h2>
+
+                <p className="mt-1 text-sm text-gray-500">
+                  {editingEmployee
+                    ? "Update employee details."
+                    : "Add a new employee."}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeModal}
+                className="text-2xl text-gray-400 hover:text-gray-700"
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-5 p-6">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Employee Code
+                </label>
+
+                <input
+                  name="employee_code"
+                  value={formData.employee_code}
+                  onChange={handleChange}
+                  placeholder="EMP001"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Name
+                </label>
+
+                <input
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="Employee name"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Department
+                </label>
+
+                <input
+                  name="department"
+                  value={formData.department}
+                  onChange={handleChange}
+                  placeholder="Maintenance"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:outline-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  disabled={submitting}
+                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="rounded-lg bg-gray-900 px-5 py-2 text-sm font-medium text-white disabled:opacity-50"
+                >
+                  {submitting
+                    ? "Saving..."
+                    : editingEmployee
+                      ? "Update Employee"
+                      : "Add Employee"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

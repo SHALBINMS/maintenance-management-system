@@ -6,8 +6,9 @@ const {
 } = require("../controllers/transactionController");
 
 const router = Router();
+const authenticateToken = require("../middleware/authMiddleware");
 
-router.post("/", createTransaction);
-router.get("/", getTransactions);
+router.post("/", authenticateToken, createTransaction);
+router.get("/", authenticateToken, getTransactions);
 
 module.exports = router;

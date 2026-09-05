@@ -9,6 +9,7 @@ import Machines from "../pages/Machines";
 import Dashboard from "../pages/Dashboard";
 import Transactions from "../pages/Transactions";
 import Employees from "../pages/Employees";
+import StockHistory from "../pages/StockHistory";
 
 function AppRoutes() {
   return (
@@ -29,6 +30,7 @@ function AppRoutes() {
             <Route path="/machines" element={<Machines />} />
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/employees" element={<Employees />} />
+            <Route path="/stock-history" element={<StockHistory />} />
           </Route>
         </Route>
       </Routes>

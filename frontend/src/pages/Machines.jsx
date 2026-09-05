@@ -5,8 +5,11 @@ import {
   updateMachine,
   deleteMachine,
 } from "../services/machinesService";
+import { useAuth } from "../context/AuthContext";
 
 function Machines() {
+  const { user } = useAuth();
+  const isAdmin = user?.role?.toLowerCase() === "admin";
   const [machines, setMachines] = useState([]);
 
   const [loading, setLoading] = useState(true);
@@ -232,13 +235,15 @@ function Machines() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={openAddModal}
-            className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
-          >
-            + Add Machine
-          </button>
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={openAddModal}
+              className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
+            >
+              + Add Machine
+            </button>
+          )}
         </div>
 
         {/* ERROR */}
@@ -380,21 +385,25 @@ function Machines() {
 
                       <td className="px-6 py-4">
                         <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => openEditModal(machine)}
-                            className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                          >
-                            Edit
-                          </button>
+                          {isAdmin && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => openEditModal(machine)}
+                                className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                              >
+                                Edit
+                              </button>
 
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(machine.id)}
-                            className="rounded-lg border border-red-200 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50"
-                          >
-                            Delete
-                          </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(machine.id)}
+                                className="rounded-lg border border-red-200 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50"
+                              >
+                                Delete
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>

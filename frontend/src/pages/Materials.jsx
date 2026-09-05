@@ -5,8 +5,11 @@ import {
   updateMaterial,
   deleteMaterial,
 } from "../services/materialsService";
+import { useAuth } from "../context/AuthContext";
 
 function Materials() {
+  const { user } = useAuth();
+  const isAdmin = user?.role?.toLowerCase() === "admin";
   const [materials, setMaterials] = useState([]);
 
   const [loading, setLoading] = useState(true);
@@ -351,13 +354,15 @@ function Materials() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={openAddModal}
-            className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
-          >
-            + Add Material
-          </button>
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={openAddModal}
+              className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
+            >
+              + Add Material
+            </button>
+          )}
         </div>
 
         {/* ERROR */}
@@ -493,29 +498,33 @@ function Materials() {
 
                       <td className="px-6 py-4">
                         <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() => openStockModal(material)}
-                            className="rounded-lg border border-green-200 px-3 py-2 text-xs font-medium text-green-700 hover:bg-green-50"
-                          >
-                            Stock IN
-                          </button>
+                          {isAdmin && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => openStockModal(material)}
+                                className="rounded-lg border border-green-200 px-3 py-2 text-xs font-medium text-green-700 hover:bg-green-50"
+                              >
+                                Stock IN
+                              </button>
 
-                          <button
-                            type="button"
-                            onClick={() => openEditModal(material)}
-                            className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                          >
-                            Edit
-                          </button>
+                              <button
+                                type="button"
+                                onClick={() => openEditModal(material)}
+                                className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                              >
+                                Edit
+                              </button>
 
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(material.id)}
-                            className="rounded-lg border border-red-200 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50"
-                          >
-                            Delete
-                          </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(material.id)}
+                                className="rounded-lg border border-red-200 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50"
+                              >
+                                Delete
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>

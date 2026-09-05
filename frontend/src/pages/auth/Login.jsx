@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { loginUser } from "../../services/authService";
+import { useNavigate } from "react-router-dom";
+import { loginUser, registerUser } from "../../services/authService";
 import { useAuth } from "../../context/AuthContext";
 
 function Login() {
@@ -13,23 +14,23 @@ function Login() {
   const [loading, setLoading] = useState(false);
 
   const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     setError("");
 
     if (isSignUp && !name.trim()) {
-      setError("Name is required.");
+      setError("Please enter your name.");
       return;
     }
 
-    if (!email.trim() || !password.trim()) {
-      setError("Email and password are required.");
+    if (!email.trim() || !password) {
+      setError("Please enter email and password.");
       return;
     }
 
-    if (password.length < 6) {
+    if (isSignUp && password.length < 6) {
       setError("Password must be at least 6 characters.");
       return;
     }
@@ -38,18 +39,31 @@ function Login() {
       setLoading(true);
 
       if (isSignUp) {
-        // Registration API connect cheyyenda place
-        setError("Sign Up backend is not connected yet.");
-        return;
+        await registerUser(name.trim(), email.trim(), password);
+
+        alert("Account created successfully. Please login.");
+
+        setIsSignUp(false);
+        setName("");
+        setEmail("");
+        setPassword("");
+      } else {
+        const data = await loginUser(email.trim(), password);
+
+        login(data.user, data.token);
+
+        navigate("/dashboard");
       }
-
-      const data = await loginUser(email, password);
-
-      login(data.user, data.token);
     } catch (err) {
-      console.error("Login failed:", err);
+      console.error(isSignUp ? "Signup failed:" : "Login failed:", err);
 
-      setError(err.response?.data?.error || "Invalid email or password.");
+      setError(
+        err.response?.data?.error ||
+          err.response?.data?.message ||
+          (isSignUp
+            ? "Failed to create account."
+            : "Invalid email or password."),
+      );
     } finally {
       setLoading(false);
     }

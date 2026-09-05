@@ -12,10 +12,8 @@ const authorizeRole = require("../middleware/roleMiddleware");
 
 const router = express.Router();
 
-// View machines
 router.get("/", authenticateToken, getMachines);
 
-// Admin-only actions
 router.post("/", authenticateToken, authorizeRole("admin"), createMachine);
 
 router.put("/:id", authenticateToken, authorizeRole("admin"), updateMachine);

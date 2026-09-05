@@ -6,8 +6,10 @@ const {
 } = require("../controllers/stockMovementController");
 
 const router = Router();
+const authenticateToken = require("../middleware/authMiddleware");
+const authorizeRole = require("../middleware/roleMiddleware");
 
-router.post("/stock-in", stockIn);
-router.get("/", getStockMovements);
+router.post("/stock-in", authenticateToken, authorizeRole("admin"), stockIn);
+router.get("/", authenticateToken, getStockMovements);
 
 module.exports = router;

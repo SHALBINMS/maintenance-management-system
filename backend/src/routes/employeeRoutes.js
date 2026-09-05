@@ -8,13 +8,20 @@ const {
 } = require("../controllers/employeeController");
 
 const router = Router();
+const authenticateToken = require("../middleware/authMiddleware");
+const authorizeRole = require("../middleware/roleMiddleware");
 
-router.get("/", getEmployees);
+router.get("/", authenticateToken, getEmployees);
 
-router.post("/", createEmployee);
+router.post("/", authenticateToken, authorizeRole("admin"), createEmployee);
 
-router.put("/:id", updateEmployee);
+router.put("/:id", authenticateToken, authorizeRole("admin"), updateEmployee);
 
-router.delete("/:id", deleteEmployee);
+router.delete(
+  "/:id",
+  authenticateToken,
+  authorizeRole("admin"),
+  deleteEmployee,
+);
 
 module.exports = router;

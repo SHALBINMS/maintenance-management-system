@@ -5,8 +5,11 @@ import {
   updateEmployee,
   deleteEmployee,
 } from "../services/employeeService";
+import { useAuth } from "../context/AuthContext";
 
 function Employees() {
+  const { user } = useAuth();
+  const isAdmin = user?.role?.toLowerCase() === "admin";
   const [employees, setEmployees] = useState([]);
 
   const [loading, setLoading] = useState(true);
@@ -221,13 +224,15 @@ function Employees() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={openAddModal}
-            className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
-          >
-            + Add Employee
-          </button>
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={openAddModal}
+              className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
+            >
+              + Add Employee
+            </button>
+          )}
         </div>
 
         {/* ERROR */}
@@ -343,21 +348,25 @@ function Employees() {
 
                       <td className="px-6 py-4">
                         <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => openEditModal(employee)}
-                            className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                          >
-                            Edit
-                          </button>
+                          {isAdmin && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => openEditModal(employee)}
+                                className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                              >
+                                Edit
+                              </button>
 
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(employee.id)}
-                            className="rounded-lg border border-red-200 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50"
-                          >
-                            Delete
-                          </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(employee.id)}
+                                className="rounded-lg border border-red-200 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50"
+                              >
+                                Delete
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>

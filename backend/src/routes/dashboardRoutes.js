@@ -6,9 +6,10 @@ const {
 } = require("../controllers/dashboardController");
 
 const router = Router();
+const authenticateToken = require("../middleware/authMiddleware");
 
-router.get("/stats", getDashboardStats);
+router.get("/stats", authenticateToken, getDashboardStats);
 
-router.get("/low-stock", getLowStockMaterials);
+router.get("/low-stock", authenticateToken, getLowStockMaterials);
 
 module.exports = router;

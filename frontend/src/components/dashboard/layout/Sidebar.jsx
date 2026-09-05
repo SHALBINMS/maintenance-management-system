@@ -54,6 +54,12 @@ function Sidebar() {
               Employees
             </NavLink>
           </li>
+
+          <li>
+            <NavLink to="/stock-history" className={navLinkClass}>
+              Stock History
+            </NavLink>
+          </li>
         </ul>
       </nav>
 

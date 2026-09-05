@@ -8,9 +8,9 @@ const authorizeRole = require("../middleware/roleMiddleware");
 
 const router = Router();
 
-router.get("/", getMaterials);
-router.post("/", createMaterial);
-router.put("/:id", updateMaterial);
+router.get("/", authenticateToken, getMaterials);
+router.post("/", authenticateToken, authorizeRole("admin"), createMaterial);
+router.put("/:id", authenticateToken, authorizeRole("admin"), updateMaterial);
 
 router.delete(
   "/:id",

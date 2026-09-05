@@ -18,3 +18,17 @@ export const registerUser = async (name, email, password) => {
 
   return response.data;
 };
+
+export const changePassword = async (
+  currentPassword,
+  newPassword,
+  confirmPassword,
+) => {
+  const response = await api.post("/auth/change-password", {
+    currentPassword,
+    newPassword,
+    confirmPassword,
+  });
+
+  return response.data;
+};

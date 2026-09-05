@@ -60,6 +60,12 @@ function Sidebar() {
               Stock History
             </NavLink>
           </li>
+
+          <li>
+            <NavLink to="/change-password" className={navLinkClass}>
+              Change Password
+            </NavLink>
+          </li>
         </ul>
       </nav>
 
